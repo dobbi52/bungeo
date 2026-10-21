@@ -143,7 +143,8 @@ h1 .t2{color:#fff}
 #boardList .r{display:flex;gap:8px;border-bottom:2px dotted #e2cfa8}
 #boardList .r span:nth-child(1){width:40px;color:#a06a3c}
 #boardList .r span:nth-child(2){flex:1}
-#boardList .r span:nth-child(3){width:90px;text-align:right;color:var(--red)}
+#boardList .r i{font-style:normal;color:#fff;padding:0 3px;margin-right:2px}#boardList .r i.mh{background:#d9452b}#boardList .r i.ml{background:#3f8f2f}
+#boardList .r span:nth-child(3){width:110px;text-align:right;color:var(--red)}
 #boardList .r span:nth-child(4){width:70px;text-align:right;color:#7a4a2a}
 #boardList .r.top1 span:nth-child(1){color:#d99a00}
 #boardList .r.me{background:#fff2b8}
@@ -221,7 +222,7 @@ h1 .t2{color:#fff}
     </div>
     <div class="btns">
       <button class="btn fr-btn drop" data-level="low">저학년<small>1~3학년</small></button>
-      <button class="btn fr-btn drop" data-level="high">고학년<small>4~6학년</small></button>
+      <button class="btn fr-btn drop" data-level="high">고학년<small>4~6학년 · 점수 1.5배</small></button>
     </div>
     <div id="best"></div>
     <div class="titlebar"><button class="small fr-alt drop" id="boardBtn">순위표 보기</button><button class="small fr-alt drop" id="loginBtn">로그인</button></div>
@@ -230,7 +231,6 @@ h1 .t2{color:#fff}
   <!-- 순위표 -->
   <div class="screen" id="boardScreen"><div class="panel fr-win drop boardpanel">
     <h1 class="out2" style="font-size:36px;line-height:44px">순위표</h1>
-    <div class="tabs" id="lvTabs"><button data-lv="low">저학년</button><button data-lv="high">고학년</button></div>
     <div class="tabs" id="pdTabs"><button data-pd="week">이번 주</button><button data-pd="ever">전체</button></div>
     <div id="boardList" class="fr-bubble"></div>
     <div id="boardMe"></div>
@@ -366,6 +366,7 @@ const QUESTIONS = {
 /* 난이도 설정 (1000 = 1초)
    손님 한 명마다 burn·patience가 SPEED_STEP 배로 줄고, MIN_SPEED 배 아래로는 안 내려가요 */
 const SPEED_STEP = 0.97, MIN_SPEED = 0.4;
+const LEVEL_BONUS = {low:1, high:1.5};   // 고학년 모드는 정답 점수 1.5배 (순위표는 하나로 통합)
 const RETRY_AFTER = 5;   // 틀린 문제는 손님 5명 뒤에 한 번 더 나와요
 /* 순위표 서버 (Apps Script 웹 앱 주소). 비어 있으면 순위표가 꺼져요 */
 const RANK_API = 'https://script.google.com/macros/s/AKfycby4McqbY2gF5k216tjw3MgvqWokWKOLxPCIToyxb0GKouLiAOnc_IW_nysJxeJTDdN4/exec';
@@ -581,7 +582,7 @@ function judge(right, word){
   if(right){
     G.correct++; G.combo++;
     const bonus = Math.round(50 * G.patience / G.patMax);
-    const pts = 100 + bonus + (G.combo>1 ? Math.min(10, G.combo-1)*20 : 0);
+    const pts = Math.round((100 + bonus + (G.combo>1 ? Math.min(10, G.combo-1)*20 : 0)) * LEVEL_BONUS[G.level]);
     addScore(pts, c); coinBurst(c);
     $('custImg').src = IMG.cust[G.cust].happy; c.classList.add('bounce');
     SFX.ok(); G.served++; $('served').textContent = `판매 ${G.served}개`;
@@ -727,7 +728,7 @@ async function rankAfterGame(){
     else alertLine(`${j.error||'올리지 못했어요.'} <button class="small fr-btn" id="rankRetry">다시 시도</button>`), $('rankRetry').onclick = rankAfterGame;
     return;
   }
-  G.submitted = true; boardCache[G.level] = j;
+  G.submitted = true; boardCache[boardLv] = j;
   const w = j.me_week;
   alertLine(`<b>${a.nick}</b> · 이번 주 ${w?`<b>${w.rank}위</b>`:'-'}` + (j.best ? ' · 새 기록으로 올렸어요!' : ` · 이번 주 최고 ${w?w.s:0}점은 그대로예요`));
 }
@@ -748,26 +749,24 @@ async function loadBoard(){
   if(!RANK_API){ $('boardList').innerHTML = '<div class="empty">순위표 서버가 아직 연결되지 않았어요.</div>'; return; }
   if(!boardCache[boardLv]) $('boardList').innerHTML = '<div class="empty">불러오는 중…</div>';
   const lv = boardLv, a = me();
-  const j = await rankCall({action:'board', level:lv, nick:a?a.nick:''});
-  if(j.ok){ boardCache[lv] = j; if(lv===boardLv) drawBoard(); }
+  const j = await rankCall({action:'board', nick:a?a.nick:''});
+  if(j.ok){ boardCache[lv] = j; drawBoard(); }
   else if(!boardCache[lv]) $('boardList').innerHTML = `<div class="empty">${j.error||'불러오지 못했어요.'}</div>`;
 }
 function drawBoard(){
-  document.querySelectorAll('#lvTabs button').forEach(b=>b.classList.toggle('on', b.dataset.lv===boardLv));
   document.querySelectorAll('#pdTabs button').forEach(b=>b.classList.toggle('on', b.dataset.pd===boardPd));
   const j = boardCache[boardLv]; if(!j) return;
   const list = j[boardPd]||[], a = me();
   const esc = s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  $('boardList').innerHTML = list.length ? list.map((r,i)=>`<div class="r${i===0?' top1':''}${a&&r.n===a.nick?' me':''}"><span>${i+1}위</span><span>${esc(r.n)}</span><span>${r.s}점</span><span>${r.c}명</span></div>`).join('')
+  $('boardList').innerHTML = list.length ? list.map((r,i)=>`<div class="r${i===0?' top1':''}${a&&r.n===a.nick?' me':''}"><span>${i+1}위</span><span>${esc(r.n)}</span><span>${r.m==='high'?'<i class="mh">고</i>':'<i class="ml">저</i>'} ${r.s}점</span><span>${r.c}명</span></div>`).join('')
     : `<div class="empty">${boardPd==='week'?'이번 주':'아직'} 기록이 없어요. 첫 번째 주인공이 되어 보세요!</div>`;
   const m = j['me_'+boardPd];
   $('boardMe').innerHTML = a ? (m ? `내 순위: <b>${m.rank}위</b> · ${m.s}점` : `${esc(a.nick)}의 기록이 아직 없어요.`) : '로그인하면 내 순위가 보여요.';
 }
-document.querySelectorAll('#lvTabs button').forEach(b=>b.onclick=()=>{ boardLv=b.dataset.lv; drawBoard(); loadBoard(); });
 document.querySelectorAll('#pdTabs button').forEach(b=>b.onclick=()=>{ boardPd=b.dataset.pd; drawBoard(); });
 let boardFrom = 'title';
 $('boardBtn').onclick = ()=>{ boardFrom='title'; openBoard(); };
-$('boardBtn2').onclick = ()=>{ boardFrom='result'; openBoard(G.level); };
+$('boardBtn2').onclick = ()=>{ boardFrom='result'; openBoard(); };
 $('boardClose').onclick = ()=>{ $('boardScreen').classList.remove('on'); boardFrom==='result' ? $('resultScreen').classList.add('on') : showTitle(); };
 $('loginBtn').onclick = openLogin;
 updateLoginBtn();

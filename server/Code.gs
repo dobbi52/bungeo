@@ -1,25 +1,27 @@
 /* ============================================================
    맞춤법 붕어빵 가게 — 순위표 서버 (Google Apps Script)
    · 로그인 확인은 생각 오락실 통합 계정 서버에 물어봐요.
-   · '기록' 시트에 닉네임·학년·주마다 최고 점수 한 줄씩 저장해요.
-   · 순위표: 저학년/고학년 × 이번 주/전체, 닉네임마다 최고 점수 하나
+   · '통합 기록' 시트에 닉네임·주마다 최고 점수 한 줄씩 저장해요. (모드는 그 점수를 낸 모드)
+   · 순위표는 저학년·고학년 통합: 이번 주/전체, 닉네임마다 최고 점수 하나
+     (고학년 모드는 게임에서 점수를 1.5배로 받아요)
    설치: 새 구글 스프레드시트 → 확장 프로그램 → Apps Script → 이 코드를 붙여 넣고 저장
          배포 → 새 배포 → 유형: 웹 앱 (실행: 나 / 액세스 권한: 모든 사용자) → 배포
          나온 웹 앱 주소(…/exec)를 게임 index.html 의 RANK_API 에 넣어요.
    기록 지우기: 시트에서 그 줄을 지우면 돼요. (순위표는 1분 안에 바뀌어요)
    ============================================================ */
 var HUB_API = 'https://script.google.com/macros/s/AKfycbzZlmUD9M4rfo4Y4eEYgNjZH0N8SppUA1Otuo9yMEOqcLfklw8XbS5ZmXj1D3KZY4EG/exec';
-var SHEET = '기록';
-var HEAD = ['닉네임', '학년', '주(월요일)', '최고 점수', '판매', '정답', '올린 시각'];
+var SHEET = '통합 기록';
+var HEAD = ['닉네임', '모드', '주(월요일)', '최고 점수', '판매', '정답', '올린 시각'];
 var TOP = 30;
 var LEVELS = { low: '저학년', high: '고학년' };
+var MAX_PER_CORRECT = { low: 400, high: 600 };   // 정답 한 번에 받을 수 있는 넉넉한 최대 점수
 
 function doGet() { return out({ ok: true, msg: '맞춤법 붕어빵 가게 순위표 서버가 켜져 있어요.' }); }
 
 function doPost(e) {
   try {
     var b = JSON.parse((e && e.postData && e.postData.contents) || '{}');
-    if (b.action === 'board') return out(board(b.level, b.nick));
+    if (b.action === 'board') return out(board(b.nick));
     if (b.action === 'submit') {
       var who = verify(b.nick, b.pin);
       if (!who.ok) return out(who);
@@ -82,8 +84,8 @@ function submit(nick, b) {
   var level = LEVELS[b.level] ? b.level : '';
   var score = Math.floor(+b.score || 0), served = Math.floor(+b.served || 0), correct = Math.floor(+b.correct || 0);
   if (!level) return { ok: false, error: '학년 정보가 없어요.' };
-  // 너무 이상한 점수는 받지 않아요 (정답 한 번에 넉넉히 잡아 400점)
-  if (score < 0 || served < 0 || correct < served || score > correct * 400 + 100 || served > 2000)
+  // 너무 이상한 점수는 받지 않아요
+  if (score < 0 || served < 0 || correct < served || score > correct * MAX_PER_CORRECT[level] + 100 || served > 2000)
     return { ok: false, error: '기록을 확인할 수 없어요.' };
   var wk = weekKey();
   var lock = LockService.getScriptLock();
@@ -92,30 +94,28 @@ function submit(nick, b) {
   try {
     var sh = sheet(), data = rows(sh), row = 0;
     for (var i = 0; i < data.length; i++) {
-      if (data[i][0] === nick && data[i][1] === LEVELS[level] && data[i][2] === wk) { row = i + 2; break; }
+      if (data[i][0] === nick && data[i][2] === wk) { row = i + 2; break; }
     }
     var vals = [[nick, LEVELS[level], wk, score, served, correct, new Date()]];
     if (!row) { sh.getRange(sh.getLastRow() + 1, 1, 1, HEAD.length).setValues(vals); best = true; }
     else if (score > +data[row - 2][3]) { sh.getRange(row, 1, 1, HEAD.length).setValues(vals); best = true; }
   } finally { lock.releaseLock(); }
-  CacheService.getScriptCache().remove('board:' + level);
-  var bd = board(level, nick);
+  CacheService.getScriptCache().remove('board');
+  var bd = board(nick);
   bd.best = best;
   return bd;
 }
 
 /* ---------- 순위표 ---------- */
-function board(level, nick) {
-  level = LEVELS[level] ? level : 'low';
+function board(nick) {
   var cache = CacheService.getScriptCache();
-  var key = 'board:' + level, all;
+  var key = 'board', all;
   var hit = cache.get(key);
   if (hit) all = JSON.parse(hit);
   else {
     var wk = weekKey(), week = {}, ever = {};
     rows(sheet()).forEach(function (r) {
-      if (r[1] !== LEVELS[level]) return;
-      var o = { n: r[0], s: +r[3] || 0, c: +r[4] || 0 };
+      var o = { n: r[0], s: +r[3] || 0, c: +r[4] || 0, m: r[1] === LEVELS.high ? 'high' : 'low' };
       if (!ever[o.n] || o.s > ever[o.n].s) ever[o.n] = o;
       if (r[2] === wk && (!week[o.n] || o.s > week[o.n].s)) week[o.n] = o;
     });
@@ -123,10 +123,10 @@ function board(level, nick) {
     all = { week: sort(week), ever: sort(ever) };
     cache.put(key, JSON.stringify(all), 60);
   }
-  var res = { ok: true, level: level, week: all.week.slice(0, TOP), ever: all.ever.slice(0, TOP) };
+  var res = { ok: true, week: all.week.slice(0, TOP), ever: all.ever.slice(0, TOP) };
   if (nick) {
     ['week', 'ever'].forEach(function (k) {
-      for (var i = 0; i < all[k].length; i++) if (all[k][i].n === nick) { res['me_' + k] = { rank: i + 1, s: all[k][i].s, c: all[k][i].c }; break; }
+      for (var i = 0; i < all[k].length; i++) if (all[k][i].n === nick) { res['me_' + k] = { rank: i + 1, s: all[k][i].s, c: all[k][i].c, m: all[k][i].m }; break; }
     });
   }
   return res;

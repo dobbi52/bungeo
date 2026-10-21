@@ -149,6 +149,38 @@ h1 .t2{color:#fff}
 #boardList .r.me{background:#fff2b8}
 #boardList .empty{text-align:center;padding-top:80px;color:#a08060}
 #boardMe{font-size:12px;line-height:18px;margin-top:6px;min-height:18px}
+
+/* ===== 추가 애니메이션 ===== */
+.mold.cooked{animation:hop .36s steps(4)}
+@keyframes hop{0%{transform:translateY(0)}35%{transform:translateY(-12px)}70%{transform:translateY(2px)}100%{transform:none}}
+.fx{position:absolute;pointer-events:none;z-index:22}
+.spark{width:10px;height:10px;background:#fff;animation:spark .55s steps(5) forwards;
+ box-shadow:0 -46px 0 #fff6a0,0 46px 0 #fff6a0,-50px 0 0 #fff6a0,50px 0 0 #fff6a0,-34px -32px 0 #ffd84a,34px -32px 0 #ffd84a,-34px 32px 0 #ffd84a,34px 32px 0 #ffd84a,0 -24px 0 -2px #fff,0 24px 0 -2px #fff,-26px 0 0 -2px #fff,26px 0 0 -2px #fff}
+@keyframes spark{0%{transform:scale(.6);opacity:1}60%{opacity:1}100%{transform:scale(1.3);opacity:0}}
+.mold.warn .px-puff.warnsmoke{display:block}
+.px-puff.warnsmoke{display:none;width:6px;height:6px;background:#8a8a8a;box-shadow:-12px 6px 0 #9a9a9a,12px 2px 0 #7a7a7a,0 -8px 0 #9a9a9a}
+.poof{width:16px;height:16px;background:#333;animation:poof .7s steps(6) forwards;
+ box-shadow:-30px -10px 0 4px #444,30px -12px 0 4px #3a3a3a,-18px 20px 0 2px #555,20px 22px 0 2px #4a4a4a,0 -32px 0 6px #2e2e2e,-40px 14px 0 #666,40px 10px 0 #666}
+@keyframes poof{0%{transform:scale(.3);opacity:1}60%{opacity:.95}100%{transform:scale(1.5) translateY(-16px);opacity:0}}
+#custAlert{position:absolute;left:390px;top:40px;z-index:3;color:#fff;font-size:24px;line-height:26px;padding:0 6px;display:none;animation:alertbob .5s steps(2) infinite}
+#custAlert.on{display:block}
+@keyframes alertbob{50%{transform:translateY(-6px)}}
+#patience.low i{animation:barblink .4s steps(2) infinite}
+@keyframes barblink{50%{opacity:.35}}
+.coin{width:26px;height:26px;background:#f6b93b;border:4px solid #7a4415;box-shadow:inset 4px 4px 0 #fff2a8,inset -4px -4px 0 #c47716,3px 3px 0 rgba(0,0,0,.35);transition:transform .6s steps(10),opacity .6s steps(10);animation:spin .3s steps(2) infinite}
+@keyframes spin{50%{width:12px;margin-left:7px}}
+#scoreBox.hit{animation:hit .3s steps(3)}
+@keyframes hit{50%{transform:scale(1.08)}}
+.quake{animation:quake .4s steps(6)}
+@keyframes quake{0%,100%{margin-left:0}20%{margin-left:-8px}40%{margin-left:7px}60%{margin-left:-5px}80%{margin-left:4px}}
+.heartfall{position:absolute;width:44px;height:40px;z-index:21;pointer-events:none;animation:heartfall .9s steps(9) forwards}
+@keyframes heartfall{0%,20%{transform:none;filter:brightness(2)}30%{filter:none}100%{transform:translateY(70px) rotate(40deg);opacity:0}}
+#closed{position:absolute;left:50%;top:-200px;transform:translateX(-50%);z-index:26;text-align:center;display:none}
+#closed.on{display:block;animation:drop .9s steps(9) forwards}
+#closed .str{width:150px;height:60px;margin:0 auto;border-left:4px solid #3b2314;border-right:4px solid #3b2314}
+#closed .sign{font-size:48px;line-height:52px;color:#fff;padding:6px 26px}
+#closed .sign small{display:block;font-size:18px;line-height:24px}
+@keyframes drop{0%{top:-200px}55%{top:110px}70%{top:86px}85%{top:104px}100%{top:96px}}
 #rotate{position:fixed;inset:0;z-index:100;background:#2a1a10;color:#fff4dc;display:none;flex-direction:column;align-items:center;justify-content:center;font-size:24px;text-align:center;gap:20px}
 #rotate .ph{width:60px;height:96px;border:8px solid #fff4dc;animation:rot 1.8s steps(4) infinite}
 @keyframes rot{0%,30%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
@@ -161,6 +193,8 @@ h1 .t2{color:#fff}
   <div id="customer"><img id="custImg" alt=""></div>
   <div id="bubble" class="fr-bubble drop"><div class="tail"></div><div class="ask" id="askLine">바른 말 붕어빵 주세요!</div><div class="sent" id="sent"></div><div class="tip fr-tip" id="tip" style="display:none"></div></div>
   <div id="patience" class="fr-dark"><i id="patBar"></i></div>
+  <div id="custAlert" class="fr-red">!</div>
+  <div id="closed"><div class="str"></div><div class="sign fr-red drop out2">영업 끝<small>CLOSED</small></div></div>
   <div id="counter"></div>
 
   <div id="scoreBox"><span class="lbl">점수</span><span id="score">0</span></div>
@@ -409,6 +443,7 @@ function setMold(m, state){
   if(state==='batter'){
     m.el.insertAdjacentHTML('beforeend','<div class="px-puff steam"></div><div class="bar"><i></i></div>');
   }
+  if(state==='cooked') m.el.insertAdjacentHTML('beforeend','<div class="px-puff warnsmoke"></div>');
   if(state==='burnt'){
     m.el.classList.add('burnt');
     m.el.insertAdjacentHTML('beforeend','<div class="px-puff smoke"></div><div class="clean fr-red">닦기!</div>');
@@ -444,9 +479,47 @@ $('kettleBtn').addEventListener('pointerdown', e=>{
   if(n) SFX.pour();
 });
 
+
+/* ===== 효과 ===== */
+function stagePos(el){
+  const r = el.getBoundingClientRect(), s = stage.getBoundingClientRect(), k = s.width/960;
+  return {x:(r.left-s.left)/k, y:(r.top-s.top)/k, w:r.width/k, h:r.height/k};
+}
+function fxAt(el, cls, ms){
+  const p = stagePos(el), d = document.createElement('div');
+  d.className = 'fx '+cls; d.style.left = (p.x+p.w/2-6)+'px'; d.style.top = (p.y+p.h*0.45-6)+'px';
+  stage.appendChild(d); setTimeout(()=>d.remove(), ms);
+}
+function coinBurst(from){
+  const p = stagePos(from), to = stagePos($('scoreBox'));
+  for(let i=0;i<4;i++){
+    const c = document.createElement('div'); c.className='fx coin';
+    const x0 = p.x+p.w/2-13+(i-1.5)*30, y0 = p.y+70-(i%2)*18;
+    c.style.left = x0+'px'; c.style.top = y0+'px'; stage.appendChild(c);
+    setTimeout(()=>{ c.style.transform = `translate(${to.x+to.w/2-x0}px, ${to.y+to.h/2-y0}px)`; c.style.opacity='.4'; }, 120+i*90);
+    setTimeout(()=>{ c.remove(); const sb=$('scoreBox'); sb.classList.remove('hit'); void sb.offsetWidth; sb.classList.add('hit'); beep(1200+i*120,.05,'square',.03); }, 720+i*90);
+  }
+}
+let shown = 0, cuT = null;
+function countUp(){
+  clearInterval(cuT);
+  if(!G) return;
+  const target = G.score, start = +$('score').textContent||0, steps = 8; let n = 0;
+  if(start===target){ $('score').textContent = target; return; }
+  cuT = setInterval(()=>{ n++; $('score').textContent = Math.round(start+(target-start)*n/steps); if(n>=steps) clearInterval(cuT); }, 60);
+}
+function quake(){
+  ['street','counter','grid','kettleBtn','tray','customer'].forEach(id=>{ const e=$(id); e.classList.remove('quake'); void e.offsetWidth; e.classList.add('quake'); setTimeout(()=>e.classList.remove('quake'),450); });
+}
+function heartFall(idx){
+  const img = $('hearts').children[idx]; if(!img) return;
+  const p = stagePos(img), h = document.createElement('img');
+  h.src = IMG.heart; h.className = 'heartfall'; h.style.left = p.x+'px'; h.style.top = p.y+'px';
+  stage.appendChild(h); setTimeout(()=>h.remove(), 950);
+}
 function addScore(v, el){
   G.score = Math.max(0, G.score+v);
-  $('score').textContent = G.score;
+  countUp();
   if(el){
     const r = el.getBoundingClientRect(), s = stage.getBoundingClientRect(), k = s.width/960;
     const p = document.createElement('div'); p.className='pop out2';
@@ -504,18 +577,18 @@ function serve(m){
 function judge(right, word){
   const q = G.q;
   const c = $('customer');
-  $('patience').classList.remove('show');
+  $('patience').classList.remove('show','low'); $('custAlert').classList.remove('on');
   G.answered++;
   if(right){
     G.correct++; G.combo++;
     const bonus = Math.round(50 * G.patience / G.patMax);
     const pts = 100 + bonus + (G.combo>1 ? Math.min(10, G.combo-1)*20 : 0);
-    addScore(pts, c);
+    addScore(pts, c); coinBurst(c);
     $('custImg').src = IMG.cust[G.cust].happy; c.classList.add('bounce');
     SFX.ok(); G.served++; $('served').textContent = `판매 ${G.served}개`;
     $('askLine').textContent = '맛있겠다! 고마워요~';
   } else {
-    G.combo = 0; G.hearts--; drawHearts();
+    G.combo = 0; G.hearts--; heartFall(G.hearts); drawHearts(); quake();
     $('custImg').src = IMG.cust[G.cust].angry; c.classList.add('shake');
     SFX.no();
     $('askLine').textContent = word ? `'${word}'(이)라니요! 틀렸어요.` : '너무 오래 기다렸어요!';
@@ -555,12 +628,12 @@ function loop(ts){
       if(m.state==='batter'){
         m.t += dt;
         const bar = m.el.querySelector('.bar i'); if(bar) bar.style.width = Math.min(100, m.t/G.cfg.bake*100)+'%';
-        if(m.t >= G.cfg.bake){ setMold(m,'cooked'); SFX.done(); }
+        if(m.t >= G.cfg.bake){ setMold(m,'cooked'); SFX.done(); fxAt(m.el,'spark',500); }
       } else if(m.state==='cooked'){
         m.t += dt;
         const burn = G.cfg.burn*G.speed;
         if(m.t > burn - Math.min(4000, burn*0.35)) m.el.classList.add('warn');
-        if(m.t >= burn){ setMold(m,'burnt'); SFX.burn(); }
+        if(m.t >= burn){ setMold(m,'burnt'); SFX.burn(); fxAt(m.el,'poof',700); }
       }
     });
     if(G.q && !G.busy){
@@ -568,6 +641,7 @@ function loop(ts){
       const p = Math.max(0, G.patience/G.patMax);
       const bar = $('patBar'); bar.style.width = (Math.ceil(p*32)/32*100)+'%';
       bar.style.setProperty('--c', p>.5 ? '#5cb83a' : p>.25 ? '#f6b93b' : '#e2482b');
+      const low = p<=.25; $('custAlert').classList.toggle('on', low); $('patience').classList.toggle('low', low);
       if(G.patience<=0){ G.busy = true; judge(false, ''); }
     }
   }
@@ -582,7 +656,7 @@ function startGame(level){
        correct:0, answered:0, served:0, wrong:[], q:null, busy:true, paused:false, over:false,
        patience:0, custOffset:Math.floor(Math.random()*4)};
   buildGrid(); drawHearts();
-  $('score').textContent='0'; $('served').textContent='판매 0개'; showCombo();
+  clearInterval(cuT); $('score').textContent='0'; $('custAlert').classList.remove('on'); $('closed').classList.remove('on'); $('served').textContent='판매 0개'; showCombo();
   $('bubble').classList.remove('show'); $('patience').classList.remove('show');
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
   $('customer').className='';
@@ -613,7 +687,9 @@ function endGame(){
     rv.style.display='block';
     rv.innerHTML = '<b>다시 보기</b>' + G.wrong.map(q=>`<p>${q.s.replace('___',`<span class="ok">${q.a}</span>`)} (<span class="no">${q.w}</span>) — ${q.tip}</p>`).join('');
   } else rv.style.display='none';
-  setTimeout(()=>$('resultScreen').classList.add('on'), 300);
+  const cl = $('closed'); cl.classList.remove('on'); void cl.offsetWidth; cl.classList.add('on');
+  beep(392,.15,'square',.05); beep(330,.15,'square',.05,.15); beep(262,.3,'square',.05,.3);
+  setTimeout(()=>{ cl.classList.remove('on'); $('resultScreen').classList.add('on'); }, 1900);
 }
 
 /* ===== 순위표 (생각 오락실 통합 로그인) ===== */

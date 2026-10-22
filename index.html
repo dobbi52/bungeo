@@ -233,7 +233,6 @@ h1 .t2{color:#fff}
       <button class="btn fr-btn drop" data-level="low">저학년<small>1~3학년</small></button>
       <button class="btn fr-btn drop" data-level="high">고학년<small>4~6학년 · 점수 1.5배</small></button>
     </div>
-    <div id="best"></div>
     <div id="iosHint" class="ioshint" hidden>아이폰은 공유 버튼 → '홈 화면에 추가'로 열면 화면이 커져요</div>
     <div class="titlebar"><button class="small fr-alt drop" id="boardBtn">순위표 보기</button><button class="small fr-alt drop" id="loginBtn">로그인</button></div>
   </div></div>
@@ -785,9 +784,6 @@ function showTitle(){
   if(G) G.over = true;
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
   $('titleScreen').classList.add('on');
-  let lo=0, hi=0;
-  try{ lo=+localStorage.getItem('bungeo_best_low')||0; hi=+localStorage.getItem('bungeo_best_high')||0; }catch(e){}
-  $('best').textContent = (lo||hi) ? `최고 기록 · 저학년 ${lo}점 · 고학년 ${hi}점` : '';
 }
 
 /* 전체화면 (휴대폰은 시작할 때 자동) */

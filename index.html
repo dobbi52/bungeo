@@ -247,6 +247,13 @@ h1 .t2{color:#fff}
     <div class="btns"><button class="btn fr-alt drop" id="boardClose">닫기</button></div>
   </div></div>
 
+  <!-- 로그인 물어보기 -->
+  <div class="screen" id="askScreen"><div class="panel fr-win drop" style="max-width:520px">
+    <h1 class="out2" style="font-size:30px;line-height:38px">잠깐!</h1>
+    <div class="sub" style="font-size:12px;line-height:20px;margin-top:10px">생각 오락실에 로그인하면<br>내 점수가 <b style="color:#d9452b">순위표</b>에 올라가요.</div>
+    <div class="btns"><button class="btn fr-btn drop" id="askLogin">로그인하고 시작</button><button class="btn fr-alt drop" id="askSkip">그냥 하기<small>순위표에 안 올라가요</small></button></div>
+  </div></div>
+
   <!-- 멈춤 -->
   <div class="screen" id="pauseScreen"><div class="panel fr-win drop">
     <h1 class="out2" style="font-size:36px;line-height:44px">잠깐 쉬는 중</h1>
@@ -805,7 +812,23 @@ if(fsSupported){ $('fsBtn').hidden = false; $('fsBtn').onclick = ()=> fsEl() ? e
 document.addEventListener('fullscreenchange', fsLabel); document.addEventListener('webkitfullscreenchange', fsLabel);
 const IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
 if(IS_IOS && (/iPhone|iPod/.test(navigator.userAgent) || !fsSupported) && !navigator.standalone) $('iosHint').hidden = false;
-document.querySelectorAll('[data-level]').forEach(b=>b.addEventListener('click',()=>{ if(IS_MOBILE) enterFS(); startGame(b.dataset.level); }));
+/* 시작: 로그인이 안 되어 있으면 한 번 물어봐요 */
+let pendingLevel = null, skipAsk = false;
+function begin(level){ if(IS_MOBILE) enterFS(); startGame(level); }
+function beginPending(){ const lv = pendingLevel; pendingLevel = null; if(lv) begin(lv); }
+document.querySelectorAll('[data-level]').forEach(b=>b.addEventListener('click',()=>{
+  const lv = b.dataset.level;
+  if(!AA || !RANK_API || me() || skipAsk){ begin(lv); return; }
+  pendingLevel = lv;
+  $('titleScreen').classList.remove('on'); $('askScreen').classList.add('on');
+}));
+$('askLogin').onclick = ()=>{
+  $('askScreen').classList.remove('on'); $('titleScreen').classList.add('on');
+  AA.open({game:GAME_ID, gameName:GAME_NAME, color:'#f6b93b',
+    onPlay: ()=> beginPending(),
+    onClose: ()=>{ if(me()) beginPending(); }});
+};
+$('askSkip').onclick = ()=>{ skipAsk = true; $('askScreen').classList.remove('on'); beginPending(); };
 $('againBtn').onclick = ()=>{ if(IS_MOBILE) enterFS(); startGame(G.level); };
 $('homeBtn').onclick = showTitle;
 $('pauseBtn').onclick = ()=>{ if(G && !G.over){ G.paused=true; $('pauseScreen').classList.add('on'); } };
